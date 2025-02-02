@@ -17,68 +17,28 @@ if not API_KEY:
 # ✅ Define the correct prompt file path
 VIDEO_PROMPT_FILE = "/workspaces/allergy/allergy-inspector-main/prompts/prepare_video_prompt.txt"
 
-def load_prompt(filepath):
-    """Reads and returns the text from the prompt file."""
-    if not os.path.exists(filepath):
-        st.error(f"❌ ERROR: Prompt file not found at {filepath}")
-        st.stop()
-    
-    try:
-        with open(filepath, "r", encoding="utf-8") as file:
-            return file.read().strip()
-    except Exception as e:
-        st.error(f"⚠️ ERROR: Unable to read the prompt file: {e}")
-        st.stop()
+# ✅ Store user preferences in session state
+if "user_name" not in st.session_state:
+    st.session_state["user_name"] = ""
+if "user_allergies" not in st.session_state:
+    st.session_state["user_allergies"] = []
 
-def generate_videos(allergies):
-    """
-    Generates a video using the API based on the allergy input.
+# ✅ Personalized onboarding
+st.sidebar.title("👤 Personalized Profile")
+st.session_state["user_name"] = st.sidebar.text_input("Enter your name", value=st.session_state["user_name"])
+st.session_state["user_allergies"] = st.sidebar.multiselect(
+    "Select your allergies",
+    ["Peanuts", "Dairy", "Gluten", "Seafood", "Soy", "Eggs", "Sesame", "Corn"],
+    default=st.session_state["user_allergies"]
+)
 
-    :param allergies: List of allergies selected by the user.
-    :return: Video URL or error message.
-    """
-    url = "https://api.aimlapi.com/v2/generate/video/kling/generation"
+st.sidebar.write("Your allergens:", ", ".join(st.session_state["user_allergies"]))
 
-    # Load the prompt from the file
-    prompt = load_prompt(VIDEO_PROMPT_FILE)
-
-    payload = {
-        "model": "kling-video/v1/standard/text-to-video",
-        "prompt": f"{prompt}\n\nAllergies considered: {allergies}",
-        "ratio": "16:9",
-        "duration": "5",
-    }
-
-    headers = {
-        "Authorization": f"Bearer {API_KEY}",
-        "Content-Type": "application/json",
-    }
-
-    try:
-        with st.spinner(f"🎥 Generating video for allergies: {allergies}..."):
-            response = requests.post(url, json=payload, headers=headers)
-            response.raise_for_status()
-            response_data = response.json()
-
-            # ✅ Debugging: Print full API response
-            st.write("🔍 Full API Response:", response_data)
-
-            video_url = response_data.get("video_url")
-
-            if video_url:
-                return video_url
-            else:
-                st.error("⚠️ API returned a response, but no video URL was found.")
-                return None
-    except requests.exceptions.RequestException as e:
-        st.error(f"⚠️ API request failed: {e}")
-        return None
-
-# ✅ Streamlit UI
-st.title("🍽️ Allergy Detection & Meal Safety")
+st.title("🍽️ Allergy Detector & Educational AI")
 
 # ✅ Step 1: User uploads a meal image
 uploaded_file = st.file_uploader("📸 Upload a meal image", type=["jpg", "jpeg", "png"])
+allergy_risk = None  # Placeholder for risk detection
 
 if uploaded_file:
     st.image(uploaded_file, caption="Uploaded Meal", use_column_width=True)
@@ -90,38 +50,34 @@ if uploaded_file:
         ingredients = get_ingredients_model_response(image_url)
 
     if ingredients:
-        st.success("✅ Ingredients detected:")
-        st.write(ingredients)
+        st.success(f"✅ Detected Ingredients: {', '.join(ingredients)}")
 
         # ✅ Step 2: Check for allergens
         with st.spinner("⚠️ Checking for allergens..."):
-            user_allergies = st.session_state.get("user_allergies", [])
-            allergy_risk = get_crossing_data_model_response(ingredients, ", ".join(user_allergies))
+            allergy_risk = get_crossing_data_model_response(ingredients, ", ".join(st.session_state["user_allergies"]))
 
         if allergy_risk:
             st.warning("⚠️ Allergy Risk Detected!")
-            st.write(allergy_risk)
+            for risk in allergy_risk:
+                status, emoji, name, description = risk
+                color = "red" if status == "dangerous" else "yellow" if status == "alert" else "green"
+                st.markdown(f"""
+                <div style="background-color:{color};padding:10px;border-radius:10px;">
+                <h4>{emoji} {name} - {status.upper()}</h4>
+                <p>{description}</p>
+                </div>""", unsafe_allow_html=True)
         else:
             st.success("✅ No major allergens detected!")
 
-# ✅ Step 3: User selects allergies (optional)
-selected_allergies = st.multiselect(
-    "Select allergies to generate video:",
-    ["Peanuts", "Dairy", "Gluten", "Seafood", "Soy", "Eggs", "Sesame", "Corn"],
-    default=[]
-)
-
-# ✅ Step 4: Generate Video (Only if no allergy risk detected)
-if st.button("🎬 Generate Video"):
+# ✅ Step 3: Generate Educational Video
+if st.button("🎬 Generate Educational Video"):
     if uploaded_file and allergy_risk:
         st.warning("⚠️ This meal contains allergens! Video generation is disabled.")
-    elif not selected_allergies:
-        st.warning("⚠️ Please select at least one allergy before generating the video.")
     else:
-        video_url = generate_videos(", ".join(selected_allergies))
+        video_url = generate_videos(", ".join(st.session_state["user_allergies"]))
 
         if video_url:
-            st.success("🎬 Your video is ready!")
+            st.success("🎬 Your educational video is ready!")
             st.video(video_url)
         else:
             st.error("⚠️ Error: No video URL returned from the API.")
