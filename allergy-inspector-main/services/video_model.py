@@ -1,62 +1,39 @@
 import os
 import requests
-import time
-import streamlit as st
 
-# Securely load API key from environment variable
-API_KEY = os.getenv("VIDEO_API_KEY")
+# ✅ Fix Path Issues
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PROMPT_DIR = os.path.join(BASE_DIR, "../prompts")
+if not os.path.exists(PROMPT_DIR):
+    PROMPT_DIR = os.path.join(BASE_DIR, "prompts")
 
-# Ensure API key exists
-if not API_KEY:
-    raise ValueError("❌ ERROR: VIDEO_API_KEY is not set. Please check your environment variables.")
+PROMPT_FILE_PATH = os.path.join(PROMPT_DIR, "prepare_video_prompt.txt")
 
-# File path for the prompt
-PROMPT_FILE_PATH = "/workspaces/allergy/allergy-inspector-main/prompts/prepare_video_prompt.txt"
-
-def load_prompt(filepath):
-    """Reads and returns the text from the prompt file."""
-    try:
-        with open(filepath, "r", encoding="utf-8") as file:
-            return file.read().strip()
-    except FileNotFoundError:
-        raise ValueError(f"❌ ERROR: Prompt file not found at {filepath}")
-    except Exception as e:
-        raise ValueError(f"⚠️ ERROR: Unable to read the prompt file: {e}")
-
-def generate_video(duration="5", ratio="16:9"):
-    """
-    Generates a video using the API based on the text prompt from the file.
+def generate_videos(allergies):
+    """Generates a video using the API based on the allergy input."""
     
-    :param duration: Length of the video (default: 5 seconds).
-    :param ratio: Aspect ratio of the video (default: 16:9).
-    :return: Video generation response
-    """
     url = "https://api.aimlapi.com/v2/generate/video/kling/generation"
-
-    # Load the prompt from the file
     prompt = load_prompt(PROMPT_FILE_PATH)
 
     payload = {
         "model": "kling-video/v1/standard/text-to-video",
-        "prompt": prompt,
-        "ratio": ratio,
-        "duration": duration,
+        "prompt": f"{prompt}\n\nAllergies considered: {allergies}",
+        "ratio": "16:9",
+        "duration": "5",
     }
 
     headers = {
-        "Authorization": f"Bearer {API_KEY}",
+        "Authorization": f"Bearer {os.getenv('VIDEO_API_KEY')}",
         "Content-Type": "application/json",
     }
 
     try:
         response = requests.post(url, json=payload, headers=headers)
         response.raise_for_status()
-        return response.json()
+        response_data = response.json()
 
+        print("🔍 Full API Response:", response_data)  # ✅ Debugging
+        return response_data.get("video_url")
     except requests.exceptions.RequestException as e:
-        return {"error": f"⚠️ API request failed: {e}"}
-
-# ✅ Allow direct testing when running the script
-if __name__ == "__main__":
-    result = generate_video()
-    print("Generation:", result)
+        print(f"⚠️ API request failed: {e}")
+        return None
