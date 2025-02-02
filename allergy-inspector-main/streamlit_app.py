@@ -10,7 +10,7 @@ SERVICES_DIR = os.path.join(BASE_DIR, "services")
 sys.path.append(SERVICES_DIR)
 
 # ✅ Now import the functions
-from multi_modal import get_ingredients_model_response, get_crossing_data_model_response
+from services.multi_modal import get_ingredients_model_response, get_crossing_data_model_response
 from video_model import generate_videos
 
 # Load environment variables
