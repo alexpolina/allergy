@@ -1,8 +1,17 @@
 import os
+import sys
 import requests
 import streamlit as st
 from dotenv import load_dotenv
-from services.multi_modal import get_ingredients_model_response, get_crossing_data_model_response
+
+# ✅ Ensure the correct module path is set
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+SERVICES_DIR = os.path.join(BASE_DIR, "services")
+sys.path.append(SERVICES_DIR)
+
+# ✅ Now import the functions
+from multi_modal import get_ingredients_model_response, get_crossing_data_model_response
+from video_model import generate_videos
 
 # Load environment variables
 load_dotenv()
