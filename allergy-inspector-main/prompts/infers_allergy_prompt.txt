@@ -1,0 +1,11 @@
+The list of known allergies is: 
+Nuts, Dairy, Gluten, Seafood,
+Soy, Eggs, Sesame, Corn, Mustard, Celery, 
+Sulfites, Legumes, Nightshades, Chocolate,
+Alcohol, Caffeine, Pork, Red Meat, Garlic, Onion, Spices, Lupin,Poppy seeds.
+
+Identify which of these items are present in the following user allergy description, and include any additional allergies that are not on the list (ignoring unknown or unrelated items):
+'{0}'
+
+Respond only with the allergy items separated by commas, with no additional explanation.
+If no known or additional allergies are identified, respond only with "[noone]"

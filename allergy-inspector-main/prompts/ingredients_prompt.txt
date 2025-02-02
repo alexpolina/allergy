@@ -1,0 +1,1 @@
+<image>\nIdentify and list each unique ingredient shown in the image once, without any repetitions or additional comments:

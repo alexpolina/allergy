@@ -1,0 +1,20 @@
+Ingredients:
+{0}
+User Allergies:
+{1}
+
+Assess each ingredient against the user's allergy profile. Return the result in a structured list format, following exactly this template for each item:
+
+[safety status, ingredient emoji, ingredient name, description]
+
+Guidelines:
+1. safety status should be:
+   - dangerous if the ingredient contains the allergen.
+   - alert if there is a mild risk or possible cross-contamination.
+   - safe if there is no allergy risk.
+2. The ingredient emoji should visually represent the ingredient (e.g., 🥛 for milk, 🌰 for nuts).
+3. Include only ingredients present in the list; avoid repetition and adding extra items.
+4. Structure the list by ranking from most dangerous to safest.
+5. Description must be informative, short with a maximum of 2 lines and related to Ingredients.
+
+Return the list strictly in this format and avoid any additional commentary outside the template.
