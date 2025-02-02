@@ -32,7 +32,7 @@ def load_prompt(filepath):
 def generate_videos(allergies):
     """
     Generates a video using the API based on the allergy input.
-    
+
     :param allergies: List of allergies selected by the user.
     :return: Video URL or error message.
     """
@@ -58,14 +58,20 @@ def generate_videos(allergies):
             response = requests.post(url, json=payload, headers=headers)
             response.raise_for_status()
             response_data = response.json()
+
+            # ✅ Debugging: Print full API response
+            st.write("🔍 Full API Response:", response_data)
+
             video_url = response_data.get("video_url")
 
             if video_url:
                 return video_url
             else:
-                return None  # No video returned
+                st.error("⚠️ API returned a response, but no video URL was found.")
+                return None
     except requests.exceptions.RequestException as e:
-        return {"error": str(e)}
+        st.error(f"⚠️ API request failed: {e}")
+        return None
 
 # ✅ Streamlit UI
 st.title("🎥 Allergy Video Generator")
