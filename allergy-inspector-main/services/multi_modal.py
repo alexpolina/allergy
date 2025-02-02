@@ -1,22 +1,51 @@
 import os
+from together import Together
+from dotenv import load_dotenv
 
-# ✅ Fix Path Issues
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-PROMPT_DIR = os.path.join(BASE_DIR, "../prompts")  # If running inside `services/`
-if not os.path.exists(PROMPT_DIR):
-    PROMPT_DIR = os.path.join(BASE_DIR, "prompts")  # If running from root
+# ✅ Load API key securely
+load_dotenv()
+API_KEY = os.getenv("MULTIMODAL_API_KEY")
 
-INGREDIENTS_PROMPT_PATH = os.path.join(PROMPT_DIR, "ingredients_prompt.txt")
+# ✅ Ensure API key exists
+if not API_KEY:
+    raise ValueError("❌ ERROR: MULTIMODAL_API_KEY is not set. Please check your .env file.")
 
-def load_prompt(filepath):
-    """Reads and returns the text from the prompt file."""
-    print(f"🔍 DEBUG: Checking if file exists at: {filepath}")
+# ✅ Initialize API client
+client = Together(base_url="https://api.aimlapi.com/v1", api_key=API_KEY)
 
-    if not os.path.exists(filepath):
-        raise ValueError(f"❌ ERROR: Prompt file not found at {filepath}")
+def get_ingredients_model_response(image_url):
+    """Calls the multimodal API to analyze an image and return detected ingredients."""
+
+    # ✅ Define the API request payload
+    payload = {
+        "model": "meta-llama/Llama-3.2-90B-Vision-Instruct-Turbo",
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": "Identify and list each unique ingredient in this image:"},
+                    {"type": "image_url", "image_url": {"url": image_url}},
+                ],
+            }
+        ],
+        "max_tokens": 1024,
+    }
+
+    # ✅ Debugging: Print the full request payload
+    print("🔍 DEBUG: Sending API request with payload:", payload)
 
     try:
-        with open(filepath, "r", encoding="utf-8") as file:
-            return file.read().strip()
+        response = client.chat.completions.create(**payload)
+        print("🔍 DEBUG: Full API Response:", response)
+
+        return response.choices[0].message.content
     except Exception as e:
-        raise ValueError(f"⚠️ ERROR: Unable to read the prompt file: {e}")
+        print(f"⚠️ ERROR: API request failed: {e}")
+        return None
+
+# ✅ Test function when running the script directly
+if __name__ == "__main__":
+    test_image_url = "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/LLama.jpg/444px-LLama.jpg?20050123205659"
+    print("🛠️ Running test...")
+    ingredients = get_ingredients_model_response(test_image_url)
+    print("✅ Ingredients Detected:", ingredients)
