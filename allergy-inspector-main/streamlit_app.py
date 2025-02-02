@@ -3,19 +3,17 @@ import sys
 import requests
 import streamlit as st
 from dotenv import load_dotenv
-import importlib
 
 # ✅ Ensure the correct module path is set
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SERVICES_DIR = os.path.join(BASE_DIR, "services")
 sys.path.append(SERVICES_DIR)
 
-# ✅ Now import the functions from services
-import services.multi_modal
-import services.video_model
-importlib.reload(services.multi_modal)
-importlib.reload(services.video_model)
+# ✅ Ensure `services/` is recognized as a module
+if not os.path.exists(os.path.join(SERVICES_DIR, "__init__.py")):
+    open(os.path.join(SERVICES_DIR, "__init__.py"), 'a').close()
 
+# ✅ Now import the functions from services
 from services.multi_modal import get_ingredients_model_response, get_crossing_data_model_response
 from services.video_model import generate_videos
 
