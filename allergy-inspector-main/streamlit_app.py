@@ -4,23 +4,26 @@ import time
 import streamlit as st
 from dotenv import load_dotenv
 
-# Load API key securely
+# Load environment variables
 load_dotenv()
+
+# Securely load API key
 API_KEY = os.getenv("VIDEO_API_KEY")
 
 if not API_KEY:
     raise ValueError("❌ ERROR: VIDEO_API_KEY is not set. Please check your environment variables.")
 
-# File path for the video generation prompt
+# ✅ Set the absolute path for the video prompt file
 VIDEO_PROMPT_FILE = "/workspaces/allergy/allergy-inspector-main/prompts/prepare_video_prompt.txt"
 
 def load_prompt(filepath):
     """Reads and returns the text from the prompt file."""
+    if not os.path.exists(filepath):
+        raise ValueError(f"❌ ERROR: Prompt file not found at {filepath}")
+    
     try:
         with open(filepath, "r", encoding="utf-8") as file:
             return file.read().strip()
-    except FileNotFoundError:
-        raise ValueError(f"❌ ERROR: Prompt file not found at {filepath}")
     except Exception as e:
         raise ValueError(f"⚠️ ERROR: Unable to read the prompt file: {e}")
 
