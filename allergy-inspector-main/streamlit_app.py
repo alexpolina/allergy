@@ -9,14 +9,14 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SERVICES_DIR = os.path.join(BASE_DIR, "services")
 sys.path.append(SERVICES_DIR)
 
-# ✅ Now import the functions
-from services.multi_modal import get_ingredients_model_response, get_crossing_data_model_response
+# ✅ Now import the functions from services
+from multi_modal import get_ingredients_model_response, get_crossing_data_model_response
 from video_model import generate_videos
 
-# Load environment variables
+# ✅ Load environment variables
 load_dotenv()
 
-# Securely load API key
+# ✅ Securely load API key
 API_KEY = os.getenv("VIDEO_API_KEY")
 
 if not API_KEY:
@@ -24,7 +24,7 @@ if not API_KEY:
     st.stop()
 
 # ✅ Define the correct prompt file path
-VIDEO_PROMPT_FILE = "/workspaces/allergy/allergy-inspector-main/prompts/prepare_video_prompt.txt"
+VIDEO_PROMPT_FILE = os.path.join(BASE_DIR, "prompts", "prepare_video_prompt.txt")
 
 # ✅ Store user preferences in session state
 if "user_name" not in st.session_state:
