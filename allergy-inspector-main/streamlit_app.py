@@ -2,6 +2,7 @@ import os
 import requests
 import streamlit as st
 from dotenv import load_dotenv
+from services.multi_modal import get_ingredients_model_response, get_crossing_data_model_response
 
 # Load environment variables
 load_dotenv()
@@ -74,18 +75,47 @@ def generate_videos(allergies):
         return None
 
 # ✅ Streamlit UI
-st.title("🎥 Allergy Video Generator")
+st.title("🍽️ Allergy Detection & Meal Safety")
 
-# User selects allergies
+# ✅ Step 1: User uploads a meal image
+uploaded_file = st.file_uploader("📸 Upload a meal image", type=["jpg", "jpeg", "png"])
+
+if uploaded_file:
+    st.image(uploaded_file, caption="Uploaded Meal", use_column_width=True)
+
+    # Convert image to base64 (for AI processing)
+    image_url = uploaded_file.getvalue()
+
+    with st.spinner("🔍 Detecting ingredients..."):
+        ingredients = get_ingredients_model_response(image_url)
+
+    if ingredients:
+        st.success("✅ Ingredients detected:")
+        st.write(ingredients)
+
+        # ✅ Step 2: Check for allergens
+        with st.spinner("⚠️ Checking for allergens..."):
+            user_allergies = st.session_state.get("user_allergies", [])
+            allergy_risk = get_crossing_data_model_response(ingredients, ", ".join(user_allergies))
+
+        if allergy_risk:
+            st.warning("⚠️ Allergy Risk Detected!")
+            st.write(allergy_risk)
+        else:
+            st.success("✅ No major allergens detected!")
+
+# ✅ Step 3: User selects allergies (optional)
 selected_allergies = st.multiselect(
     "Select allergies to generate video:",
     ["Peanuts", "Dairy", "Gluten", "Seafood", "Soy", "Eggs", "Sesame", "Corn"],
     default=[]
 )
 
-# ✅ Wait for user to click "Generate Video"
-if st.button("Generate Video"):
-    if not selected_allergies:
+# ✅ Step 4: Generate Video (Only if no allergy risk detected)
+if st.button("🎬 Generate Video"):
+    if uploaded_file and allergy_risk:
+        st.warning("⚠️ This meal contains allergens! Video generation is disabled.")
+    elif not selected_allergies:
         st.warning("⚠️ Please select at least one allergy before generating the video.")
     else:
         video_url = generate_videos(", ".join(selected_allergies))
