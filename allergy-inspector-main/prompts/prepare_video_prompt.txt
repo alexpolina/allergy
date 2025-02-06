@@ -1,9 +1,3 @@
-Create a visual sequence for the list of allergies {0} by highlighting affected areas on a silhouette. 
-For each allergy, within parentheses start with the allergy name followed by a colon, and list a scene in the frist square brackets to show movement for 5-second video clips and the allergy description in the second square brackets.
-Each symptom description should be vivid and clear, ensuring that the symptom is fully and effectively portrayed in a way that informs and educates viewers about prevention without unnecessary or distressing details.
+Food Allergy Awareness Video (No Text, Only Graphics & Animation)
 
-Format:
-	(Allergy Name: [person silhouette highlight affected area with color and description of symptom][additional symptom scenes to illustrate progression and preventive notes.]),(...)
-
-Example for dust mite allergy:
-	(Dust Mite Allergy: [person silhouette highlight nose, eyes, and chest in red for respiratory irritation.],[ symptoms include frequent sneezing, itchy nose, red, watery eyes, and nasal congestion. Symptoms often worsen in dusty, closed spaces and upon waking up.]),
+Create a video that visually explains food allergies using a human, smooth motion, and color highlights. The video should show symptoms, triggers, and prevention tips in a calm and informative way.Background is blue. 

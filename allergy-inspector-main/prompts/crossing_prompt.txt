@@ -1,20 +1,32 @@
 Ingredients:
 {0}
+
 User Allergies:
 {1}
 
-Assess each ingredient against the user's allergy profile. Return the result in a structured list format, following exactly this template for each item:
+INSTRUCTIONS:
+1. You MUST return each ingredient in the EXACT bracket format:
+   [safety status, ingredient emoji, ingredient name, "short description"]
+2. One line per ingredient, no extra text or commentary.
+3. The "safety status" must be:
+   - dangerous if the ingredient definitely contains an allergen,
+   - alert if partial cross-contamination is possible,
+   - safe otherwise.
+4. The "ingredient emoji" is an appropriate emoji for that ingredient 
+   (e.g. 🍅 for tomato, 🥛 for milk, 🍞 for bread).
+5. The "ingredient name" is the ingredient string from the list (or a concise label).
+6. The "short description" is at most 2 lines, referencing the allergen risk. Please also check cross-reactivity with oral pollen syndrome.
+   Example for a peanut sauce:
+   [dangerous, 🥜, peanut sauce, "Contains peanuts. High allergy risk."]
 
-[safety status, ingredient emoji, ingredient name, description]
+**DO NOT** include bullet points or additional commentary.  
+Just bracketed items, one per line.
 
-Guidelines:
-1. safety status should be:
-   - dangerous if the ingredient contains the allergen.
-   - alert if there is a mild risk or possible cross-contamination.
-   - safe if there is no allergy risk.
-2. The ingredient emoji should visually represent the ingredient (e.g., 🥛 for milk, 🌰 for nuts).
-3. Include only ingredients present in the list; avoid repetition and adding extra items.
-4. Structure the list by ranking from most dangerous to safest.
-5. Description must be informative, short with a maximum of 2 lines and related to Ingredients.
+---
+**Example**:
 
-Return the list strictly in this format and avoid any additional commentary outside the template.
+[dangerous, 🥜, peanut sauce, "Contains peanuts. High risk!"]
+[alert, 🍞, bread cubes, "Possible gluten cross-contamination."]
+[safe, 🍅, tomato, "No known allergen risk."]
+
+Now produce your answer:
