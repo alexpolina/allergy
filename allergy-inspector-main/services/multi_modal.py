@@ -3,104 +3,170 @@ import base64
 import json
 from openai import OpenAI
 
-# Load environment variables
-load_dotenv()
-API_KEY = os.getenv("MULTIMODAL_API_KEY")
+# Load API Key
+MULTIMODAL_API_KEY = os.getenv("MULTIMODAL_API_KEY")
+if not MULTIMODAL_API_KEY:
+    raise ValueError("❌ ERROR: MULTIMODAL_API_KEY is not set. Please check your environment variables.")
 
-# Ensure API key exists
-if not API_KEY:
-    raise ValueError("❌ ERROR: MULTIMODAL_API_KEY is not set. Please check your .env file.")
+client = OpenAI(
+    base_url="https://api.aimlapi.com/v1",
+    api_key=MULTIMODAL_API_KEY
+)
 
-# Initialize Together API client
-client = Together(base_url="https://api.aimlapi.com/v1", api_key=API_KEY)
+PROMPT_DIR = "/workspaces/allergy/allergy-inspector-main/prompts"
+CROSSING_PROMPT_FILE = os.path.join(PROMPT_DIR, "crossing_prompt.txt")
+INGREDIENTS_PROMPT_FILE = os.path.join(PROMPT_DIR, "ingredients_prompt.txt")
+INFERS_ALLERGY_PROMPT_FILE = os.path.join(PROMPT_DIR, "infers_allergy_prompt.txt")
 
-# File paths for prompts
-CROSSING_PROMPT_PATH = "/workspaces/allergy/allergy-inspector-main/prompts/crossing_prompt.txt"
-INFERS_ALLERGY_PROMPT_PATH = "/workspaces/allergy/allergy-inspector-main/prompts/infers_allergy_prompt.txt"
-INGREDIENTS_PROMPT_PATH = "/workspaces/allergy/allergy-inspector-main/prompts/ingredients_prompt.txt"
+def load_prompt(filepath):
+    if not os.path.exists(filepath):
+        print(f"⚠️ ERROR: Prompt file '{filepath}' not found.")
+        return ""
+    with open(filepath, 'r', encoding='utf-8') as file:
+        return file.read().strip()
 
-def load_prompt(filepath, *args):
-    """
-    Reads a prompt file and formats it with given arguments.
-
-    :param filepath: Path to the prompt file.
-    :param args: Variables to insert into the prompt.
-    :return: Formatted prompt text.
-    """
+def _encode_image_to_base64(image_binary: bytes) -> str:
     try:
-        with open(filepath, "r", encoding="utf-8") as file:
-            prompt_text = file.read().strip()
-            return prompt_text.format(*args) if args else prompt_text
-    except FileNotFoundError:
-        raise ValueError(f"❌ ERROR: Prompt file not found at {filepath}")
+        return base64.b64encode(image_binary).decode("utf-8")
     except Exception as e:
-        raise ValueError(f"⚠️ ERROR: Unable to read the prompt file: {e}")
+        print(f"❌ ERROR: Failed to encode image: {e}")
+        return ""
 
-def get_ingredients_model_response(image_url):
+def get_ingredients_model_response(image_binary: bytes):
     """
-    Identifies ingredients in a food image.
-    
-    :param image_url: URL of the image.
-    :return: List of identified ingredients.
+    Detects ingredients in an uploaded image.
+    - Removes duplicates
     """
-    prompt_text = load_prompt(INGREDIENTS_PROMPT_PATH)
+    image_base64 = _encode_image_to_base64(image_binary)
+    if not image_base64:
+        print("❌ ERROR: Could not encode image.")
+        return []
 
-    response = client.chat.completions.create(
-        model="meta-llama/Llama-3.2-90B-Vision-Instruct-Turbo",
-        messages=[
-            {"role": "user", "content": [{"type": "image_url", "image_url": {"url": image_url}}, {"type": "text", "text": prompt_text}]}
-        ],
-        max_tokens=1024,
-    )
+    try:
+        prompt_text = load_prompt(INGREDIENTS_PROMPT_FILE)
+        if not prompt_text:
+            return []
 
-    return response.choices[0].message.content
+        response = client.chat.completions.create(
+            model="gpt-4o-mini-2024-07-18",
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}
+                        },
+                        {
+                            "type": "text",
+                            "text": prompt_text
+                        }
+                    ]
+                }
+            ],
+        )
 
-def get_crossing_data_model_response(ingredients_text, allergies_text):
+        if response and response.choices:
+            raw_text = response.choices[0].message.content.strip()
+            detected_ingredients = [i.strip().lower() for i in raw_text.split(",")]
+            return list(set(detected_ingredients))
+        else:
+            print("⚠️ ERROR: AI returned an empty response.")
+            return []
+    except Exception as e:
+        print(f"❌ ERROR calling AI: {e}")
+        return []
+
+def get_crossing_data_model_response(ingredients_list, user_allergies):
     """
-    Assesses each ingredient against the user's allergies.
-    
-    :param ingredients_text: List of detected ingredients.
-    :param allergies_text: List of user allergies.
-    :return: Structured allergy safety report.
+    Cross-checks detected ingredients vs. user allergies.
+    Returns bracketed lines like "[status, emoji, ingredient, desc]"
     """
-    prompt_text = load_prompt(CROSSING_PROMPT_PATH, ingredients_text, allergies_text)
+    if not ingredients_list or not user_allergies:
+        print("⚠️ ERROR: No ingredients or allergies provided.")
+        return []
 
-    response = client.chat.completions.create(
-        model="meta-llama/Llama-3.2-90B-Vision-Instruct-Turbo",
-        messages=[
-            {"role": "user", "content": [{"type": "text", "text": prompt_text}]}
-        ],
-        max_tokens=1024,
-    )
+    ingredients_text = ", ".join(ingredients_list)
+    allergies_text = ", ".join(user_allergies)
 
-    return response.choices[0].message.content
+    prompt_text = load_prompt(CROSSING_PROMPT_FILE)
+    if not prompt_text:
+        return []
 
-def get_infers_allergy_model_response(user_description):
+    prompt_text = prompt_text.format(ingredients_text, allergies_text)
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini-2024-07-18",
+            messages=[{"role": "user", "content": prompt_text}],
+        )
+
+        if response and response.choices:
+            raw_response = response.choices[0].message.content.strip()
+            return [
+                line.strip()
+                for line in raw_response.split("\n")
+                if line.startswith("[")
+            ]
+        else:
+            print("⚠️ ERROR: AI returned an invalid response.")
+            return []
+    except Exception as e:
+        print(f"❌ ERROR calling AI: {e}")
+        return []
+
+def get_infers_allergy_model_response(description: str):
     """
-    Identifies allergies based on a user's allergy description.
-    
-    :param user_description: User's allergy description.
-    :return: List of detected allergies or "[noone]" if none are found.
+    Analyzes user description to extract known allergies.
+    Returns a list of allergies.
     """
-    prompt_text = load_prompt(INFERS_ALLERGY_PROMPT_PATH, user_description)
+    if not description:
+        return []
 
-    response = client.chat.completions.create(
-        model="meta-llama/Llama-3.2-90B-Vision-Instruct-Turbo",
-        messages=[
-            {"role": "user", "content": [{"type": "text", "text": prompt_text}]}
-        ],
-        max_tokens=1024,
-    )
+    prompt_text = load_prompt(INFERS_ALLERGY_PROMPT_FILE)
+    if not prompt_text:
+        return []
 
-    return response.choices[0].message.content
+    prompt_text = prompt_text.format(description)
 
-# ✅ Allow direct testing when running the script
-if __name__ == "__main__":
-    test_image_url = "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/LLama.jpg/444px-LLama.jpg?20050123205659"
-    test_ingredients = "peanuts, milk, wheat"
-    test_allergies = "nuts, dairy"
-    test_user_description = "I get sick when I eat bread and shrimp."
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini-2024-07-18",
+            messages=[{"role": "user", "content": prompt_text}],
+        )
 
-    print("🔍 Identified Ingredients:", get_ingredients_model_response(test_image_url))
-    print("⚠️ Allergy Risk Assessment:", get_crossing_data_model_response(test_ingredients, test_allergies))
-    print("📌 Inferred Allergies:", get_infers_allergy_model_response(test_user_description))
+        if response and response.choices:
+            raw_text = response.choices[0].message.content.strip()
+            print("🔍 DEBUG: Inferring allergies ->", raw_text)
+
+            if raw_text.lower() in ["[noone]", "none", ""]:
+                # re-try with a stricter query
+                strict_prompt = f"""
+                Extract allergens from this user statement:
+                "{description}"
+                - ONLY return allergens in a JSON array format: ["allergen1", "allergen2"]
+                - DO NOT return "none", "[noone]", or explanations.
+                """
+                strict_response = client.chat.completions.create(
+                    model="gpt-4o-mini-2024-07-18",
+                    messages=[{"role": "user", "content": strict_prompt}],
+                )
+                raw_text = strict_response.choices[0].message.content.strip()
+                print("🔍 DEBUG: Re-attempt ->", raw_text)
+
+            # Try parse as JSON
+            try:
+                allergy_list = json.loads(raw_text)
+                if isinstance(allergy_list, list):
+                    return [item.strip().lower() for item in allergy_list]
+            except json.JSONDecodeError:
+                pass
+
+            # fallback to comma-split
+            return [item.strip().lower() for item in raw_text.split(",") if item]
+        else:
+            print("⚠️ ERROR: AI did not return a valid response.")
+            return []
+    except Exception as e:
+        print(f"❌ ERROR calling AI: {e}")
+        return []
