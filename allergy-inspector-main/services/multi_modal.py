@@ -1,7 +1,12 @@
 import os
 import base64
 import json
+import logging
 from openai import OpenAI
+
+# Setup logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
 
 # Load API Key
 MULTIMODAL_API_KEY = os.getenv("MULTIMODAL_API_KEY")
@@ -13,25 +18,31 @@ client = OpenAI(
     api_key=MULTIMODAL_API_KEY
 )
 
-# Use the current working directory to locate the prompts folder.
-# When running Streamlit, os.getcwd() is usually the project root.
-PROMPT_DIR = os.path.join(os.getcwd(), "prompts")
+# Use the current working directory as the project root.
+cwd = os.getcwd()
+logger.info("Current working directory: %s", cwd)
+PROMPT_DIR = os.path.join(cwd, "prompts")
+logger.info("Expected prompt directory: %s", PROMPT_DIR)
+
 CROSSING_PROMPT_FILE = os.path.join(PROMPT_DIR, "crossing_prompt.txt")
 INGREDIENTS_PROMPT_FILE = os.path.join(PROMPT_DIR, "ingredients_prompt.txt")
 INFERS_ALLERGY_PROMPT_FILE = os.path.join(PROMPT_DIR, "infers_allergy_prompt.txt")
+logger.info("Expected ingredients prompt file at: %s", INGREDIENTS_PROMPT_FILE)
 
 def load_prompt(filepath):
     if not os.path.exists(filepath):
-        print(f"⚠️ ERROR: Prompt file '{filepath}' not found.")
+        logger.error("Prompt file '%s' not found.", filepath)
         return ""
     with open(filepath, 'r', encoding='utf-8') as file:
-        return file.read().strip()
+        content = file.read().strip()
+        logger.info("Loaded prompt file '%s' successfully.", filepath)
+        return content
 
 def _encode_image_to_base64(image_binary: bytes) -> str:
     try:
         return base64.b64encode(image_binary).decode("utf-8")
     except Exception as e:
-        print(f"❌ ERROR: Failed to encode image: {e}")
+        logger.error("❌ ERROR: Failed to encode image: %s", e)
         return ""
 
 def get_ingredients_model_response(image_binary: bytes):
@@ -41,12 +52,13 @@ def get_ingredients_model_response(image_binary: bytes):
     """
     image_base64 = _encode_image_to_base64(image_binary)
     if not image_base64:
-        print("❌ ERROR: Could not encode image.")
+        logger.error("❌ ERROR: Could not encode image.")
         return []
 
     try:
         prompt_text = load_prompt(INGREDIENTS_PROMPT_FILE)
         if not prompt_text:
+            logger.error("❌ ERROR: Ingredients prompt is empty.")
             return []
 
         response = client.chat.completions.create(
@@ -68,13 +80,14 @@ def get_ingredients_model_response(image_binary: bytes):
 
         if response and response.choices:
             raw_text = response.choices[0].message.content.strip()
+            logger.info("AI response for ingredients: %s", raw_text)
             detected_ingredients = [i.strip().lower() for i in raw_text.split(",")]
             return list(set(detected_ingredients))
         else:
-            print("⚠️ ERROR: AI returned an empty response.")
+            logger.error("⚠️ ERROR: AI returned an empty response.")
             return []
     except Exception as e:
-        print(f"❌ ERROR calling AI: {e}")
+        logger.error("❌ ERROR calling AI: %s", e)
         return []
 
 def get_crossing_data_model_response(ingredients_list, user_allergies):
@@ -83,7 +96,7 @@ def get_crossing_data_model_response(ingredients_list, user_allergies):
     Returns bracketed lines like "[status, emoji, ingredient, desc]"
     """
     if not ingredients_list or not user_allergies:
-        print("⚠️ ERROR: No ingredients or allergies provided.")
+        logger.error("⚠️ ERROR: No ingredients or allergies provided.")
         return []
 
     ingredients_text = ", ".join(ingredients_list)
@@ -91,6 +104,7 @@ def get_crossing_data_model_response(ingredients_list, user_allergies):
 
     prompt_text = load_prompt(CROSSING_PROMPT_FILE)
     if not prompt_text:
+        logger.error("❌ ERROR: Crossing prompt is empty.")
         return []
 
     prompt_text = prompt_text.format(ingredients_text, allergies_text)
@@ -103,16 +117,17 @@ def get_crossing_data_model_response(ingredients_list, user_allergies):
 
         if response and response.choices:
             raw_response = response.choices[0].message.content.strip()
+            logger.info("Crossing data AI response: %s", raw_response)
             return [
                 line.strip()
                 for line in raw_response.split("\n")
                 if line.startswith("[")
             ]
         else:
-            print("⚠️ ERROR: AI returned an invalid response.")
+            logger.error("⚠️ ERROR: AI returned an invalid response.")
             return []
     except Exception as e:
-        print(f"❌ ERROR calling AI: {e}")
+        logger.error("❌ ERROR calling AI: %s", e)
         return []
 
 def get_infers_allergy_model_response(description: str):
@@ -125,6 +140,7 @@ def get_infers_allergy_model_response(description: str):
 
     prompt_text = load_prompt(INFERS_ALLERGY_PROMPT_FILE)
     if not prompt_text:
+        logger.error("❌ ERROR: Infers allergy prompt is empty.")
         return []
 
     prompt_text = prompt_text.format(description)
@@ -137,10 +153,9 @@ def get_infers_allergy_model_response(description: str):
 
         if response and response.choices:
             raw_text = response.choices[0].message.content.strip()
-            print("🔍 DEBUG: Inferring allergies ->", raw_text)
+            logger.info("Inferring allergies AI response: %s", raw_text)
 
             if raw_text.lower() in ["[noone]", "none", ""]:
-                # Re-try with a stricter query
                 strict_prompt = f"""
                 Extract allergens from this user statement:
                 "{description}"
@@ -152,21 +167,18 @@ def get_infers_allergy_model_response(description: str):
                     messages=[{"role": "user", "content": strict_prompt}],
                 )
                 raw_text = strict_response.choices[0].message.content.strip()
-                print("🔍 DEBUG: Re-attempt ->", raw_text)
+                logger.info("Re-attempt AI response for allergies: %s", raw_text)
 
-            # Try parse as JSON
             try:
                 allergy_list = json.loads(raw_text)
                 if isinstance(allergy_list, list):
                     return [item.strip().lower() for item in allergy_list]
             except json.JSONDecodeError:
-                pass
-
-            # Fallback to comma-split
+                logger.error("JSON decode error for allergies response: %s", raw_text)
             return [item.strip().lower() for item in raw_text.split(",") if item]
         else:
-            print("⚠️ ERROR: AI did not return a valid response.")
+            logger.error("⚠️ ERROR: AI did not return a valid response.")
             return []
     except Exception as e:
-        print(f"❌ ERROR calling AI: {e}")
+        logger.error("❌ ERROR calling AI: %s", e)
         return []
