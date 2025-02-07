@@ -13,7 +13,8 @@ client = OpenAI(
     api_key=MULTIMODAL_API_KEY
 )
 
-PROMPT_DIR = "/workspaces/allergy/allergy-inspector-main/prompts"
+# Use relative path for the prompts directory
+PROMPT_DIR = os.path.join(os.path.dirname(__file__), "prompts")
 CROSSING_PROMPT_FILE = os.path.join(PROMPT_DIR, "crossing_prompt.txt")
 INGREDIENTS_PROMPT_FILE = os.path.join(PROMPT_DIR, "ingredients_prompt.txt")
 INFERS_ALLERGY_PROMPT_FILE = os.path.join(PROMPT_DIR, "infers_allergy_prompt.txt")
@@ -49,21 +50,19 @@ def get_ingredients_model_response(image_binary: bytes):
 
         response = client.chat.completions.create(
             model="gpt-4o-mini-2024-07-18",
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "image_url",
-                            "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}
-                        },
-                        {
-                            "type": "text",
-                            "text": prompt_text
-                        }
-                    ]
-                }
-            ],
+            messages=[{
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}
+                    },
+                    {
+                        "type": "text",
+                        "text": prompt_text
+                    }
+                ]
+            }],
         )
 
         if response and response.choices:
