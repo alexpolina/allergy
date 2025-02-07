@@ -13,8 +13,9 @@ client = OpenAI(
     api_key=MULTIMODAL_API_KEY
 )
 
-# Use relative path for the prompts directory
-PROMPT_DIR = os.path.join(os.path.dirname(__file__), "prompts")
+# Use the current working directory to locate the prompts folder.
+# When running Streamlit, os.getcwd() is usually the project root.
+PROMPT_DIR = os.path.join(os.getcwd(), "prompts")
 CROSSING_PROMPT_FILE = os.path.join(PROMPT_DIR, "crossing_prompt.txt")
 INGREDIENTS_PROMPT_FILE = os.path.join(PROMPT_DIR, "ingredients_prompt.txt")
 INFERS_ALLERGY_PROMPT_FILE = os.path.join(PROMPT_DIR, "infers_allergy_prompt.txt")
@@ -139,7 +140,7 @@ def get_infers_allergy_model_response(description: str):
             print("🔍 DEBUG: Inferring allergies ->", raw_text)
 
             if raw_text.lower() in ["[noone]", "none", ""]:
-                # re-try with a stricter query
+                # Re-try with a stricter query
                 strict_prompt = f"""
                 Extract allergens from this user statement:
                 "{description}"
@@ -161,7 +162,7 @@ def get_infers_allergy_model_response(description: str):
             except json.JSONDecodeError:
                 pass
 
-            # fallback to comma-split
+            # Fallback to comma-split
             return [item.strip().lower() for item in raw_text.split(",") if item]
         else:
             print("⚠️ ERROR: AI did not return a valid response.")
