@@ -10,7 +10,7 @@ INSTRUCTIONS:
 2. One line per ingredient, no extra text or commentary.
 3. The "safety status" must be:
    - dangerous if the ingredient definitely contains an allergen,
-   - alert if partial cross-contamination is possible,
+   - alert if partial cross-contamination and Cross-reactivity is possible,
    - safe otherwise.
 4. The "ingredient emoji" is an appropriate emoji for that ingredient 
    (e.g. 🍅 for tomato, 🥛 for milk, 🍞 for bread).
