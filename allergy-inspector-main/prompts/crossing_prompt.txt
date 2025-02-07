@@ -23,7 +23,7 @@ INSTRUCTIONS:
 Just bracketed items, one per line.
 
 ---
-**Example**:
+Example:
 
 [dangerous, 🥜, peanut sauce, "Contains peanuts. High risk!"]
 [alert, 🍞, bread cubes, "Possible gluten cross-contamination."]
