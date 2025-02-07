@@ -56,13 +56,13 @@ def display_ingredient_cards(ingredient_data_list):
         status = item["status"].lower()
         color = "#ff6961" if status == "dangerous" else "#FFD700" if status == "alert" else "#77DD77"
         allergen = item["ingredient"].lower()
-        # Call GPT‑4o via our helper function to retrieve allergy symptoms.
+        # Retrieve dynamic allergy symptoms
         symptoms = get_allergy_symptoms(allergen)
         
         card_html = f"""
         <div style="border: 2px solid {color}; 
                     border-radius: 10px; 
-                    width: 250px; 
+                    width: 400px; 
                     padding: 10px; 
                     margin-bottom: 10px; 
                     background-color: {color}20;">
