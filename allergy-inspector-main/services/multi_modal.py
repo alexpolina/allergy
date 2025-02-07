@@ -183,3 +183,25 @@ def get_infers_allergy_model_response(description: str):
     except Exception as e:
         logger.error("❌ ERROR calling AI: %s", e)
         return []
+
+def get_allergy_symptoms_model_response(allergen: str) -> str:
+    """
+    Uses the GPT-4o model to generate a concise description of common allergy symptoms 
+    for a given allergen.
+    """
+    prompt = f"Describe the common symptoms and allergic reactions experienced by individuals who are allergic to {allergen}. Provide a concise, clear, and informative description."
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini-2024-07-18",
+            messages=[{"role": "user", "content": prompt}],
+        )
+        if response and response.choices:
+            symptoms = response.choices[0].message.content.strip()
+            logger.info("Allergy symptoms for '%s': %s", allergen, symptoms)
+            return symptoms
+        else:
+            logger.error("No response from AI for allergen %s", allergen)
+            return "No description available."
+    except Exception as e:
+        logger.error("Error calling AI for allergy symptoms: %s", e)
+        return "No description available."
