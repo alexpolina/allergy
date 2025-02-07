@@ -7,7 +7,8 @@ from streamlit_chat import message
 
 from services.multi_modal import (
     get_ingredients_model_response,
-    get_crossing_data_model_response
+    get_crossing_data_model_response,
+    get_allergy_symptoms_model_response  # new import
 )
 from services.video_model import generate_videos
 from utils.media_handler import image_to_base64
@@ -45,10 +46,19 @@ def format_ingredient_list(ingredients):
     # Header on one line and each ingredient on its own line.
     return "🔍 Detected Ingredients:\n" + "\n".join(cleaned)
 
+# Cache the allergy symptoms per allergen to avoid repeated API calls.
+@st.cache_data(show_spinner=False)
+def get_allergy_symptoms(allergen: str) -> str:
+    return get_allergy_symptoms_model_response(allergen)
+
 def display_ingredient_cards(ingredient_data_list):
     for item in ingredient_data_list:
         status = item["status"].lower()
         color = "#ff6961" if status == "dangerous" else "#FFD700" if status == "alert" else "#77DD77"
+        allergen = item["ingredient"].lower()
+        # Call GPT‑4o via our helper function to retrieve allergy symptoms.
+        symptoms = get_allergy_symptoms(allergen)
+        
         card_html = f"""
         <div style="border: 2px solid {color}; 
                     border-radius: 10px; 
@@ -67,6 +77,9 @@ def display_ingredient_cards(ingredient_data_list):
             </span>
             <p style="margin-top: 5px; font-size: 0.9em;">
                 {item["description"]}
+            </p>
+            <p style="margin-top: 5px; font-size: 0.8em; font-style: italic;">
+                Allergy Reaction: {symptoms}
             </p>
         </div>
         """
