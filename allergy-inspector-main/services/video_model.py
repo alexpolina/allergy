@@ -14,8 +14,8 @@ if not VIDEO_API_KEY:
 # ✅ API Endpoint
 API_URL = "https://api.aimlapi.com/v2/generate/video/kling/generation"
 
-# ✅ Path to the Prompt File
-PROMPT_FILE = "/workspaces/allergy/allergy-inspector-main/prompts/prepare_video_prompt.txt"
+# ✅ Path to the Prompt File using a relative path
+PROMPT_FILE = os.path.join(os.path.dirname(__file__), '..', 'prompts', 'prepare_video_prompt.txt')
 
 def load_prompt(filepath):
     """Loads a prompt file and ensures it exists."""
