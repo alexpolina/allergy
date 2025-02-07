@@ -13,6 +13,9 @@ from services.video_model import generate_videos
 from utils.media_handler import image_to_base64
 from ui.sidebar import sidebar_setup
 
+# ✅ Move this to the top (MUST be the first Streamlit command)
+st.set_page_config(page_title="Allergy Detector", page_icon="🔍")
+
 # Setup logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
@@ -101,7 +104,6 @@ def media_input():
 # Main Application Debugging
 ##################################################
 def main():
-    st.set_page_config(page_title="Allergy Detector", page_icon="🔍")
     sidebar_setup()
     
     if st.session_state.get("allergies_selected"):
