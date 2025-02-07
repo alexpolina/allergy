@@ -17,13 +17,11 @@ from ui.sidebar import sidebar_setup
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 ##################################################
-# Helper: Safe Rerun Function
+# Helper: Safe Rerun Function (notification removed)
 ##################################################
 def safe_rerun():
     if hasattr(st, "experimental_rerun"):
         st.experimental_rerun()
-    else:
-        st.warning("Please refresh the page to update the input method.")
 
 ##################################################
 # Helpers: Chat Messages
