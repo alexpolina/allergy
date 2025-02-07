@@ -49,7 +49,7 @@ def _encode_image_to_base64(image_binary: bytes) -> str:
 def get_ingredients_model_response(image_binary: bytes):
     """
     Detects ingredients in an uploaded image.
-    - Removes duplicates
+    - Removes duplicates.
     """
     image_base64 = _encode_image_to_base64(image_binary)
     if not image_base64:
@@ -94,7 +94,7 @@ def get_ingredients_model_response(image_binary: bytes):
 def get_crossing_data_model_response(ingredients_list, user_allergies):
     """
     Cross-checks detected ingredients vs. user allergies.
-    Returns bracketed lines like "[status, emoji, ingredient, desc]"
+    Returns bracketed lines like "[status, emoji, ingredient, desc]".
     """
     if not ingredients_list or not user_allergies:
         logger.error("⚠️ ERROR: No ingredients or allergies provided.")
@@ -186,10 +186,14 @@ def get_infers_allergy_model_response(description: str):
 
 def get_allergy_symptoms_model_response(allergen: str) -> str:
     """
-    Uses the GPT-4o model to generate a concise description of common allergy symptoms 
-    for a given allergen.
+    Uses the GPT-4o model to generate a concise description (up to three sentences)
+    of common allergy symptoms for a given allergen.
     """
-    prompt = f"Describe the common symptoms and allergic reactions experienced by individuals who are allergic to {allergen}. Provide a concise, clear, and informative description."
+    prompt = (
+        f"Describe in up to three sentences the common symptoms and allergic reactions "
+        f"experienced by individuals who are allergic to {allergen}. "
+        f"Provide a concise, clear, and informative description."
+    )
     try:
         response = client.chat.completions.create(
             model="gpt-4o-mini-2024-07-18",
