@@ -17,11 +17,13 @@ from ui.sidebar import sidebar_setup
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 ##################################################
-# Helper: Safe Rerun Function (notification removed)
+# Helper: Safe Rerun Function
 ##################################################
 def safe_rerun():
     if hasattr(st, "experimental_rerun"):
         st.experimental_rerun()
+    else:
+        st.warning("Please refresh the page to update the input method.")
 
 ##################################################
 # Helpers: Chat Messages
@@ -221,21 +223,6 @@ def media_input():
 ##################################################
 def main():
     st.set_page_config(page_title="Allergy Detector", page_icon="🔍")
-    
-    # Hide GitHub link and other Streamlit chrome elements
-    hide_github_icon = """
-    <style>
-    .css-1jc7ptx, .e1ewe7hr3, .viewerBadge_container__1QSob, 
-    .styles_viewerBadge__1yB5_, .viewerBadge_link__1S137, .viewerBadge_text__1JaDK {
-        display: none; 
-    }
-    #MainMenu { visibility: hidden; } 
-    footer { visibility: hidden; } 
-    header { visibility: hidden; }
-    </style>
-    """
-    st.markdown(hide_github_icon, unsafe_allow_html=True)
-    
     sidebar_setup()
     if st.session_state.get("allergies_selected"):
         bot_message(f"Hello {st.session_state.get('user_name', 'Guest')}! Let's see what's in your food.")
