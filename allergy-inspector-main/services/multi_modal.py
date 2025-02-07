@@ -18,10 +18,11 @@ client = OpenAI(
     api_key=MULTIMODAL_API_KEY
 )
 
-# Use the current working directory as the project root.
+# Use the current working directory and the repository structure to locate the prompts folder.
+# In your repository, prompts are in "allergy-inspector-main/prompts".
 cwd = os.getcwd()
 logger.info("Current working directory: %s", cwd)
-PROMPT_DIR = os.path.join(cwd, "prompts")
+PROMPT_DIR = os.path.join(cwd, "allergy-inspector-main", "prompts")
 logger.info("Expected prompt directory: %s", PROMPT_DIR)
 
 CROSSING_PROMPT_FILE = os.path.join(PROMPT_DIR, "crossing_prompt.txt")
